@@ -44,10 +44,6 @@ func main() {
 
 			logger := initLogger(cfg.Logger, version)
 
-			initSentry(cfg.Monitoring.SentryDSN, logger)
-
-			go initMetrics(cfg.Monitoring.PromAddr, logger)
-
 			conn, rConn, err := initPgxConnections(cfg.Database)
 			if err != nil {
 				return fmt.Errorf("pgx connection: %w", err)

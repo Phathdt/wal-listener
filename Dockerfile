@@ -6,10 +6,11 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o wal-listener ./cmd/wal-listener
 
-FROM scratch
+FROM alpine:3.18
 WORKDIR /app
 RUN chown nobody:nobody /app
 USER nobody:nobody
 COPY --from=builder --chown=nobody:nobody ./app/wal-listener .
+COPY --from=builder --chown=nobody:nobody ./app/run.sh .
 
-CMD ["./wal-listener"]
+ENTRYPOINT sh run.sh
