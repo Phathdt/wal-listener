@@ -1,34 +1,15 @@
-FROM golang:1.20.6-bullseye as builder
-LABEL stage=builder
-LABEL maintainer="Konstantin Makarov <hippik80@gmail.com>"
+FROM golang:1.20.6-alpine as builder
+WORKDIR /app
 
-RUN adduser \
-  --disabled-password \
-  --gecos "" \
-  --home "/nonexistent" \
-  --shell "/sbin/nologin" \
-  --no-create-home \
-  --uid 65532 \
-  goof
-
-WORKDIR $GOPATH/src/listener/app/
-
-COPY . .
-
+COPY go.mod go.sum ./
 RUN go mod download
-RUN go mod verify
-
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /app ./cmd/wal-listener
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o wal-listener ./cmd/wal-listener
 
 FROM scratch
+WORKDIR /app
+RUN chown nobody:nobody /app
+USER nobody:nobody
+COPY --from=builder --chown=nobody:nobody ./app/wal-listener .
 
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /etc/group /etc/group
-
-COPY --from=builder /app .
-
-USER goof:goof
-
-CMD ["./app"]
+CMD ["./wal-listener"]
