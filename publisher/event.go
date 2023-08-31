@@ -29,7 +29,5 @@ func (e *Event) SubjectName(cfg *config.Config) string {
 		}
 	}
 
-	topic = cfg.Publisher.Topic + "." + cfg.Publisher.TopicPrefix + topic
-
 	return topic
 }
