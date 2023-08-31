@@ -175,37 +175,10 @@ func (l pgxLogger) Log(_ pgx.LogLevel, msg string, _ map[string]any) {
 	logrus.Debugln(msg)
 }
 
-type eventPublisher interface {
-	Publish(string, publisher.Event) error
-}
-
-// factoryPublisher represents a factory function for creating a eventPublisher.
-func factoryPublisher(cfg *config.PublisherCfg, logger *logrus.Entry) (eventPublisher, error) {
+func factoryPublisher(cfg *config.PublisherCfg, logger *logrus.Entry) (publisher.Publisher, error) {
 	switch cfg.Type {
-	case config.PublisherTypeKafka:
-		producer, err := publisher.NewProducer(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("kafka producer: %w", err)
-		}
-
-		return publisher.NewKafkaPublisher(producer), nil
 	case config.PublisherTypeNats:
-		natsConn, err := nats.Connect(cfg.Address)
-		if err != nil {
-			return nil, fmt.Errorf("nats connection: %w", err)
-		}
-		defer natsConn.Close()
-
-		js, err := natsConn.JetStream()
-		if err != nil {
-			return nil, fmt.Errorf("jet stream: %w", err)
-		}
-
-		if err := createStream(logger, js, cfg.Topic); err != nil {
-			return nil, fmt.Errorf("create Nats stream: %w", err)
-		}
-
-		return publisher.NewNatsPublisher(js), nil
+		return publisher.NewNatsPublisher(cfg, logger)
 	default:
 		return nil, fmt.Errorf("unknown publisher type: %s", cfg.Type)
 	}
